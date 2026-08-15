@@ -1,0 +1,166 @@
+semantic_layer:
+  version: "4.0.0"
+  name: "Advanced Global Pricing Semantic Layer"
+
+  dimensions:
+    - name: time
+      type: temporal
+      granularity: [day, week, month, quarter, year]
+      sql_column: date
+
+    - name: geography
+      type: categorical
+      hierarchy: [region, country]
+      sql_columns: [region, country]
+
+    - name: region
+      type: categorical
+      sql_column: region
+
+    - name: country
+      type: categorical
+      sql_column: country
+
+    - name: product_category
+      type: categorical
+      sql_column: product_category
+
+  measures:
+    - name: revenue_usd
+      display_name: "Total Revenue (USD)"
+      description: "Gross revenue in USD before discounts"
+      sql_expression: "SUM(usd_price)"
+      format: "currency"
+      currency: "USD"
+
+    - name: revenue_local
+      display_name: "Total Revenue (Local Currency)"
+      description: "Gross revenue in local currency before discounts"
+      sql_expression: "SUM(local_price)"
+      format: "local_currency"
+
+    - name: cost
+      display_name: "Total Cost"
+      description: "Sum of product costs in USD"
+      sql_expression: "SUM(cost)"
+      format: "currency"
+      currency: "USD"
+
+    - name: shipping_cost
+      display_name: "Shipping Cost"
+      description: "Total shipping costs in USD"
+      sql_expression: "SUM(shipping_cost_usd)"
+      format: "currency"
+      currency: "USD"
+
+    - name: discount
+      display_name: "Discounts"
+      description: "Total discount amount in USD"
+      sql_expression: "SUM(discount_usd)"
+      format: "currency"
+      currency: "USD"
+
+    - name: units_sold
+      display_name: "Units Sold"
+      description: "Total number of units sold"
+      sql_expression: "SUM(units_sold)"
+      format: "number"
+
+    - name: net_revenue
+      display_name: "Net Revenue (USD)"
+      description: "Revenue after discounts in USD"
+      sql_expression: "SUM(usd_price - discount_usd)"
+      format: "currency"
+      currency: "USD"
+
+    - name: total_cost
+      display_name: "Total Cost (All-in)"
+      description: "Product cost + shipping cost in USD"
+      sql_expression: "SUM(cost + shipping_cost_usd)"
+      format: "currency"
+      currency: "USD"
+
+    - name: margin
+      display_name: "Gross Margin (USD)"
+      description: "Net revenue minus total cost in USD"
+      sql_expression: "SUM(usd_price - discount_usd - cost - shipping_cost_usd)"
+      format: "currency"
+      currency: "USD"
+
+    - name: margin_pct
+      display_name: "Margin Percentage"
+      description: "Margin as percentage of net revenue"
+      sql_expression: "(SUM(usd_price - discount_usd - cost - shipping_cost_usd) / SUM(usd_price - discount_usd)) * 100"
+      format: "percentage"
+
+    - name: avg_price_usd
+      display_name: "Average Price (USD)"
+      description: "Average USD price per transaction"
+      sql_expression: "AVG(usd_price)"
+      format: "currency"
+      currency: "USD"
+
+    - name: avg_price_local
+      display_name: "Average Price (Local)"
+      description: "Average local currency price per transaction"
+      sql_expression: "AVG(local_price)"
+      format: "local_currency"
+
+    - name: transaction_count
+      display_name: "Transaction Count"
+      description: "Number of transactions"
+      sql_expression: "COUNT(*)"
+      format: "number"
+
+    - name: gdp_per_capita
+      display_name: "GDP Per Capita (USD)"
+      description: "Average GDP per capita of countries"
+      sql_expression: "AVG(gdp_per_capita_usd)"
+      format: "currency"
+      currency: "USD"
+
+    - name: population
+      display_name: "Population (Millions)"
+      description: "Total population in millions"
+      sql_expression: "SUM(population_millions)"
+      format: "number"
+
+    - name: price_per_gdp
+      display_name: "Price Relative to GDP"
+      description: "Average USD price divided by GDP per capita"
+      sql_expression: "AVG(usd_price / gdp_per_capita_usd)"
+      format: "percentage"
+
+  filters:
+    - name: q3_2024
+      condition: "date >= '2024-07-01' AND date <= '2024-09-30'"
+
+    - name: north_america_only
+      condition: "region = 'North America'"
+
+    - name: south_america_only
+      condition: "region = 'South America'"
+
+    - name: europe_only
+      condition: "region = 'Europe'"
+
+    - name: asia_only
+      condition: "region = 'Asia'"
+
+    - name: oceania_only
+      condition: "region = 'Oceania'"
+
+    - name: africa_only
+      condition: "region = 'Africa'"
+
+    - name: middle_east_only
+      condition: "region = 'Middle East'"
+
+    - name: electronics
+      condition: "product_category = 'Electronics'"
+
+    - name: clothing
+      condition: "product_category = 'Clothing'"
+
+    - name: home_garden
+      condition: "product_category = 'Home & Garden'"

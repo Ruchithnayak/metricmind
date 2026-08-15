@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetricMind — Agentic Semantic BI (Global Standalone)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app-container { display: flex; height: 100vh; }
+        .sidebar {
+            width: 280px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+        }
+        .logo-text {
+            font-size: 20px; font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .governance-badge {
+            background: #064e3b; color: #34d399;
+            padding: 6px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
+            margin-bottom: 20px;
+        }
+        .governance-badge::before {
+            content: ''; width: 6px; height: 6px;
+            background: #34d399; border-radius: 50%;
+        }
+        .interview-mode-btn {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white; border: none; padding: 10px 16px;
+            border-radius: 8px; font-size: 13px; font-weight: 600;
+            cursor: pointer; margin-bottom: 20px;
+        }
+        .interview-panel {
+            background: #0f172a; border: 1px solid #f59e0b;
+            border-radius: 10px; padding: 16px; margin-bottom: 20px;
+            display: none;
+        }
+        .interview-panel.active { display: block; }
+        .interview-panel h4 { color: #f59e0b; font-size: 13px; margin-bottom: 10px; }
+        .interview-panel p { font-size: 12px; color: #cbd5e1; line-height: 1.6; margin-bottom: 8px; }
+        .section-title {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: #94a3b8; margin-bottom: 12px; margin-top: 20px;
+        }
+        .metric-chip {
+            background: #334155; padding: 8px 12px; border-radius: 6px;
+            margin-bottom: 8px; font-size: 13px; cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .metric-chip:hover { background: #475569; border-color: #3b82f6; }
+        .metric-chip .name { font-weight: 600; color: #f1f5f9; }
+        .metric-chip .desc { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        .main-area { flex: 1; display: flex; flex-direction: column; background: #0f172a; }
+        .chat-header {
+            padding: 16px 24px; border-bottom: 1px solid #334155;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .chat-header h2 { font-size: 16px; font-weight: 600; }
+        .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8; }
+        .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .message { max-width: 85%; animation: fadeIn .5s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .message.user { align-self: flex-end; }
+        .message.agent { align-self: flex-start; width: 100%; }
+        .message-bubble { padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+        .message.user .message-bubble { background: #3b82f6; color: white; }
+        .message.agent .message-bubble { background: #1e293b; border: 1px solid #334155; }
+        .message-label { font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; }
+        .typing-cursor::after { content: '|'; animation: blink 1s infinite; color: #3b82f6; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .reasoning-box { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-top: 12px; }
+        .reasoning-title { font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 12px; }
+        .reasoning-step { display: flex; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #334155; }
+        .reasoning-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .step-number { width: 24px; height: 24px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+        .step-action { font-size: 13px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+        .step-thought { font-size: 12px; color: #94a3b8; font-style: italic; }
+        .chart-container { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-top: 12px; height: 300px; }
+        .kpi-grid { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+        .kpi-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; min-width: 140px; }
+        .kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+        .kpi-value { font-size: 20px; font-weight: 700; color: #f1f5f9; }
+        .transparency-panel { background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 12px; margin-top: 12px; font-family: 'Courier New', monospace; font-size: 12px; }
+        .transparency-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .transparency-title { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+        .transparency-toggle { background: #334155; border: none; color: #e2e8f0; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .transparency-content { color: #cbd5e1; white-space: pre-wrap; word-break: break-word; }
+        .input-area { padding: 16px 24px; border-top: 1px solid #334155; display: flex; gap: 12px; align-items: center; }
+        .input-field { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; color: #e2e8f0; font-size: 14px; outline: none; }
+        .input-field:focus { border-color: #3b82f6; }
+        .send-btn { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .suggested-queries { display: flex; gap: 8px; padding: 0 24px 12px; flex-wrap: wrap; }
+        .suggested-chip { background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+        .suggested-chip:hover { background: #334155; color: #e2e8f0; border-color: #3b82f6; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        .data-table th { background: #334155; padding: 10px 12px; text-align: left; font-weight: 600; color: #94a3b8; text-transform: uppercase; font-size: 11px; }
+        .data-table td { padding: 10px 12px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+        .loading-dots { display: flex; gap: 4px; padding: 12px 0; }
+        .loading-dots span { width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .loading-dots span:nth-child(1){animation-delay:-.32s} .loading-dots span:nth-child(2){animation-delay:-.16s}
+        @keyframes bounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+        .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; overflow: hidden; }
+        .confetti { position: absolute; width: 10px; height: 10px; animation: confetti-fall 3s ease-out forwards; }
+        @keyframes confetti-fall { 0%{transform:translateY(-100px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+        .auto-demo-banner { background: linear-gradient(135deg, #f59e0b20, #ef444420); border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin: 0 24px 12px; display: flex; align-items: center; gap: 12px; }
+        .auto-demo-banner .text { font-size: 13px; color: #fbbf24; }
+        .btn-skip { margin-left: auto; background: transparent; border: 1px solid #f59e0b; color: #fbbf24; padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        @media (max-width: 768px) { .sidebar { display: none; } .message { max-width: 95%; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="logo"><div class="logo-icon">🧠</div><div class="logo-text">MetricMind</div></div>
+            <div class="governance-badge">Semantic Layer Active</div>
+            <button class="interview-mode-btn" onclick="toggleInterviewMode()">💡 Why This Impresses</button>
+            <div class="interview-panel" id="interviewPanel">
+                <h4>🎯 Interview Talking Points</h4>
+                <p><strong>Governance First:</strong> "I built a governance layer that prevents AI hallucinations by defining every metric as code."</p>
+                <p><strong>No Raw SQL:</strong> "The agent never writes raw SQL. It only understands the semantic schema and constructs API payloads."</p>
+                <p><strong>Multi-Step Reasoning:</strong> "The agent auto-drills down to find root causes without human prompting."</p>
+                <p><strong>Full Transparency:</strong> "Every response has 'View API Call' for audit."</p>
+                <p><strong>Consistent Metrics:</strong> "Finance and Sales see the exact same numbers."</p>
+            </div>
+            <div class="section-title">Available Metrics</div>
+            <div id="metricsList"></div>
+            <div class="section-title">Dimensions</div>
+            <div id="dimensionsList"></div>
+        </div>
+        <div class="main-area">
+            <div class="chat-header"><h2>💬 Conversational BI</h2><div class="status-indicator"><div class="status-dot"></div><span>Agent Online • Governance Enforced</span></div></div>
+            <div class="auto-demo-banner" id="autoDemoBanner"><span class="icon">🎬</span><span class="text">Auto-demo running... Watch the agent analyze global data automatically!</span><button class="btn-skip" onclick="skipAutoDemo()">Skip</button></div>
+            <div class="suggested-queries">
+                <div class="suggested-chip" onclick="sendQuery('Compare revenue across all continents')">Compare all continents</div>
+                <div class="suggested-chip" onclick="sendQuery('Show me revenue by country')">Revenue by country</div>
+                <div class="suggested-chip" onclick="sendQuery('Why did our European margins drop?')">European margins</div>
+                <div class="suggested-chip" onclick="sendQuery('Which country has the highest margin?')">Highest margin country</div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message agent">
+                    <div class="message-label">MetricMind Agent</div>
+                    <div class="message-bubble">
+                        👋 Welcome to <strong>MetricMind</strong>. I'm your agentic BI assistant powered by a governed semantic layer.
+                        <br><br>
+                        Ask me anything about your global business metrics across 6 continents and 24 countries — revenue, margins, costs — and I'll query the semantic layer (never raw SQL) to give you trusted, consistent answers.
+                        <br><br>
+                        <em>Try: "Compare revenue across all continents"</em>
+                    </div>
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" class="input-field" id="userInput" placeholder="Ask about revenue, margins, costs..." onkeypress="if(event.key==='Enter') sendQuery()">
+                <button class="send-btn" id="sendBtn" onclick="sendQuery()">Send</button>
+            </div>
+        </div>
+    </div>
+    <div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+const RAW_CSV = `transaction_id,date,region,country,product_category,revenue,cost,units_sold,shipping_cost,discount_amount
+T001,2024-07-01,North America,USA,Electronics,52000,36000,140,2800,2000
+T002,2024-07-02,North America,Canada,Electronics,38000,27000,95,2100,1200
+T003,2024-07-03,North America,Mexico,Electronics,29000,21000,75,1800,900
+T004,2024-07-04,South America,Brazil,Electronics,31000,22000,80,1700,1000
+T005,2024-07-05,South America,Argentina,Electronics,26000,19000,65,1500,800
+T006,2024-07-06,South America,Chile,Electronics,33000,24000,90,1900,1100
+T007,2024-07-07,Europe,Germany,Electronics,45000,32000,120,2500,1500
+T008,2024-07-08,Europe,France,Electronics,38000,27000,95,2100,1200
+T009,2024-07-09,Europe,UK,Electronics,52000,36000,140,2800,2000
+T010,2024-07-10,Europe,Italy,Electronics,35000,25000,100,1900,1300
+T011,2024-07-11,Europe,Spain,Electronics,32000,23000,90,1750,1100
+T012,2024-07-12,Asia,India,Electronics,35000,25000,110,1900,1100
+T013,2024-07-13,Asia,China,Electronics,48000,33000,130,2600,1800
+T014,2024-07-14,Asia,Japan,Electronics,55000,38000,150,2900,2200
+T015,2024-07-15,Asia,South Korea,Electronics,42000,30000,110,2300,1500
+T016,2024-07-16,Asia,Singapore,Electronics,39000,28000,100,2100,1400
+T017,2024-07-17,Oceania,Australia,Electronics,42000,30000,105,2300,1600
+T018,2024-07-18,Oceania,New Zealand,Electronics,28000,20000,70,1500,900
+T019,2024-07-19,Africa,South Africa,Electronics,24000,17000,65,1400,800
+T020,2024-07-20,Africa,Nigeria,Electronics,18000,13000,50,1100,600
+T021,2024-07-21,Africa,Egypt,Electronics,21000,15000,60,1250,700
+T022,2024-07-22,Middle East,UAE,Electronics,36000,26000,95,1900,1200
+T023,2024-07-23,Middle East,Saudi Arabia,Electronics,33000,24000,85,1750,1100
+T024,2024-07-24,Middle East,Israel,Electronics,40000,29000,105,2100,1400
+T025,2024-07-25,North America,USA,Clothing,24000,16000,210,1900,900
+T026,2024-07-26,North America,Canada,Clothing,18000,12000,160,1500,600
+T027,2024-07-27,North America,Mexico,Clothing,15000,10000,130,1300,500
+T028,2024-07-28,South America,Brazil,Clothing,14000,9000,120,1100,400
+T029,2024-07-29,South America,Argentina,Clothing,11000,7500,95,900,300
+T030,2024-07-30,South America,Chile,Clothing,17000,11000,145,1300,600
+T031,2024-08-01,Europe,Germany,Clothing,22000,15000,200,1800,800
+T032,2024-08-02,Europe,France,Clothing,18000,12000,160,1500,600
+T033,2024-08-03,Europe,UK,Clothing,25000,17000,220,2000,1000
+T034,2024-08-04,Europe,Italy,Clothing,19000,13000,165,1550,750
+T035,2024-08-05,Europe,Spain,Clothing,17000,11500,145,1400,650
+T036,2024-08-06,Asia,India,Clothing,16000,10500,140,1200,500
+T037,2024-08-07,Asia,China,Clothing,21000,14000,180,1600,800
+T038,2024-08-08,Asia,Japan,Clothing,28000,18500,240,2100,1200
+T039,2024-08-09,Asia,South Korea,Clothing,22000,14500,185,1650,900
+T040,2024-08-10,Asia,Singapore,Clothing,20000,13500,165,1500,800
+T041,2024-08-11,Oceania,Australia,Clothing,19000,12500,155,1400,700
+T042,2024-08-12,Oceania,New Zealand,Clothing,13000,8500,105,950,450
+T043,2024-08-13,Africa,South Africa,Clothing,11000,7200,95,1000,400
+T044,2024-08-14,Africa,Nigeria,Clothing,8000,5200,70,750,280
+T045,2024-08-15,Africa,Egypt,Clothing,9500,6200,80,850,350
+T046,2024-08-16,Middle East,UAE,Clothing,17000,11000,145,1300,600
+T047,2024-08-17,Middle East,Saudi Arabia,Clothing,15000,9800,125,1150,500
+T048,2024-08-18,Middle East,Israel,Clothing,19000,12500,160,1450,750
+T049,2024-08-19,North America,USA,Home & Garden,17000,11000,90,1300,600
+T050,2024-08-20,North America,Canada,Home & Garden,13000,8500,70,1050,450
+T051,2024-08-21,North America,Mexico,Home & Garden,10000,6500,55,850,350
+T052,2024-08-22,South America,Brazil,Home & Garden,9000,5800,48,780,290
+T053,2024-08-23,South America,Argentina,Home & Garden,7500,4800,38,650,220
+T054,2024-08-24,South America,Chile,Home & Garden,10500,6800,52,820,310
+T055,2024-08-25,Europe,Germany,Home & Garden,15000,10000,80,1200,500
+T056,2024-08-26,Europe,France,Home & Garden,12000,8000,65,1000,400
+T057,2024-08-27,Europe,UK,Home & Garden,18000,12000,90,1400,700
+T058,2024-08-28,Europe,Italy,Home & Garden,13000,8500,68,1050,450
+T059,2024-08-29,Europe,Spain,Home & Garden,11500,7500,58,920,380
+T060,2024-08-30,Asia,India,Home & Garden,11000,7200,60,950,380
+T061,2024-09-01,Asia,China,Home & Garden,15000,9800,82,1250,550
+T062,2024-09-02,Asia,Japan,Home & Garden,20000,13000,100,1500,800
+T063,2024-09-03,Asia,South Korea,Home & Garden,16000,10500,78,1200,600
+T064,2024-09-04,Asia,Singapore,Home & Garden,14500,9400,70,1100,520
+T065,2024-09-05,Oceania,Australia,Home & Garden,14000,9000,72,1100,480
+T066,2024-09-06,Oceania,New Zealand,Home & Garden,9500,6100,48,720,320
+T067,2024-09-07,Africa,South Africa,Home & Garden,8000,5200,65,720,300
+T068,2024-09-08,Africa,Nigeria,Home & Garden,6000,3900,48,580,220
+T069,2024-09-09,Africa,Egypt,Home & Garden,7000,4600,55,650,260
+T070,2024-09-10,Middle East,UAE,Home & Garden,12500,8000,62,950,420
+T071,2024-09-11,Middle East,Saudi Arabia,Home & Garden,11000,7100,54,850,360
+T072,2024-09-12,Middle East,Israel,Home & Garden,14000,9000,70,1050,500
+T073,2024-09-13,North America,USA,Electronics,55000,38000,150,2900,2200
+T074,2024-09-14,North America,Canada,Electronics,41000,29000,105,2300,1400
+T075,2024-09-15,North America,Mexico,Electronics,32000,23000,85,2000,1100
+T076,2024-09-16,South America,Brazil,Electronics,34000,24500,95,2000,1200
+T077,2024-09-17,South America,Argentina,Electronics,29000,21000,75,1700,950
+T078,2024-09-18,South America,Chile,Electronics,36000,25500,100,2100,1300
+T079,2024-09-19,Europe,Germany,Electronics,48000,34000,130,2600,1800
+T080,2024-09-20,Europe,France,Electronics,42000,30000,110,2300,1600
+T081,2024-09-21,Europe,UK,Electronics,56000,39000,155,3000,2300
+T082,2024-09-22,Europe,Italy,Electronics,38000,27000,110,2050,1400
+T083,2024-09-23,Europe,Spain,Electronics,35000,25000,100,1900,1250
+T084,2024-09-24,Asia,India,Electronics,38000,26500,120,2100,1300
+T085,2024-09-25,Asia,China,Electronics,51000,35000,140,2700,1900
+T086,2024-09-26,Asia,Japan,Electronics,58000,40000,160,3000,2300
+T087,2024-09-27,Asia,South Korea,Electronics,45000,31500,120,2400,1600
+T088,2024-09-28,Asia,Singapore,Electronics,42000,29500,110,2250,1450
+T089,2024-09-29,Oceania,Australia,Electronics,45000,31500,115,2400,1700
+T090,2024-09-30,Oceania,New Zealand,Electronics,30000,21500,75,1600,1000
+T091,2024-09-30,Africa,South Africa,Electronics,26000,18500,70,1500,900
+T092,2024-09-30,Africa,Nigeria,Electronics,19500,14000,55,1200,650
+T093,2024-10-01,Africa,Egypt,Electronics,23000,16500,65,1350,750
+T094,2024-10-02,Middle East,UAE,Electronics,39000,28000,100,2050,1300
+T095,2024-10-03,Middle East,Saudi Arabia,Electronics,36000,26000,90,1900,1200
+T096,2024-10-04,Middle East,Israel,Electronics,43000,31000,110,2250,1500
+T097,2024-10-05,North America,USA,Clothing,26000,17000,230,2000,1000
+T098,2024-10-06,North America,Canada,Clothing,20000,13000,175,1600,700
+T099,2024-10-07,North America,Mexico,Clothing,16500,11000,145,1400,600
+T100,2024-10-08,South America,Brazil,Clothing,15500,10000,130,1200,500
+T101,2024-10-09,South America,Argentina,Clothing,12000,8000,100,1000,350
+T102,2024-10-10,South America,Chile,Clothing,18500,12000,155,1400,700
+T103,2024-10-11,Europe,Germany,Clothing,24000,16000,210,1900,900
+T104,2024-10-12,Europe,France,Clothing,20000,13000,175,1600,700
+T105,2024-10-13,Europe,UK,Clothing,27000,18000,240,2100,1100
+T106,2024-10-14,Europe,Italy,Clothing,20500,13500,180,1650,820
+T107,2024-10-15,Europe,Spain,Clothing,18500,12000,160,1500,720
+T108,2024-10-16,Asia,India,Clothing,17500,11500,155,1300,600
+T109,2024-10-17,Asia,China,Clothing,23000,15000,195,1700,900
+T110,2024-10-18,Asia,Japan,Clothing,30000,19500,260,2200,1300
+T111,2024-10-19,Asia,South Korea,Clothing,24000,15500,200,1750,1000
+T112,2024-10-20,Asia,Singapore,Clothing,22000,14500,180,1600,900
+T113,2024-10-21,Oceania,Australia,Clothing,20500,13500,165,1500,750
+T114,2024-10-22,Oceania,New Zealand,Clothing,14000,9000,110,1000,500
+T115,2024-10-23,Africa,South Africa,Clothing,12000,7800,100,1050,450
+T116,2024-10-24,Africa,Nigeria,Clothing,8800,5700,75,800,310
+T117,2024-10-25,Africa,Egypt,Clothing,10500,6800,88,920,380
+T118,2024-10-26,Middle East,UAE,Clothing,18500,12000,160,1400,700
+T119,2024-10-27,Middle East,Saudi Arabia,Clothing,16500,10700,140,1250,600
+T120,2024-10-28,Middle East,Israel,Clothing,20500,13500,175,1550,850
+T121,2024-10-29,North America,USA,Home & Garden,18500,12000,100,1400,700
+T122,2024-10-30,North America,Canada,Home & Garden,14500,9500,78,1150,500
+T123,2024-10-31,North America,Mexico,Home & Garden,11000,7200,60,920,380
+T124,2024-11-01,South America,Brazil,Home & Garden,9500,6100,50,820,300
+T125,2024-11-02,South America,Argentina,Home & Garden,8000,5100,40,680,230
+T126,2024-11-03,South America,Chile,Home & Garden,11000,7100,54,850,330
+T127,2024-11-04,Europe,Germany,Home & Garden,16000,10500,85,1250,550
+T128,2024-11-05,Europe,France,Home & Garden,13000,8500,70,1050,450
+T129,2024-11-06,Europe,UK,Home & Garden,19000,12500,95,1450,750
+T130,2024-11-07,Europe,Italy,Home & Garden,14000,9100,72,1120,480
+T131,2024-11-08,Europe,Spain,Home & Garden,12500,8100,62,980,410
+T132,2024-11-09,Asia,India,Home & Garden,12000,7800,65,1000,420
+T133,2024-11-10,Asia,China,Home & Garden,16500,10500,88,1300,600
+T134,2024-11-11,Asia,Japan,Home & Garden,21000,13500,105,1550,850
+T135,2024-11-12,Asia,South Korea,Home & Garden,17000,11000,82,1250,640
+T136,2024-11-13,Asia,Singapore,Home & Garden,15500,10000,75,1150,560
+T137,2024-11-14,Oceania,Australia,Home & Garden,15000,9600,76,1150,500
+T138,2024-11-15,Oceania,New Zealand,Home & Garden,10200,6500,50,760,340
+T139,2024-11-16,Africa,South Africa,Home & Garden,8500,5500,68,760,320
+T140,2024-11-17,Africa,Nigeria,Home & Garden,6400,4100,50,600,230
+T141,2024-11-18,Africa,Egypt,Home & Garden,7500,4900,58,690,280
+T142,2024-11-19,Middle East,UAE,Home & Garden,13500,8600,66,1000,450
+T143,2024-11-20,Middle East,Saudi Arabia,Home & Garden,11800,7600,57,900,380
+T144,2024-11-21,Middle East,Israel,Home & Garden,15000,9600,74,1120,520`;
+
+function parseCSV(csvText) {
+    const lines = csvText.trim().split('\n');
+    const headers = lines[0].split(',');
+    return lines.slice(1).map(line => {
+        const values = line.split(',');
+        const row = {};
+        headers.forEach((h, i) => {
+            row[h] = ['revenue','cost','shipping_cost','discount_amount'].includes(h) ? parseFloat(values[i]) :
+                     ['units_sold'].includes(h) ? parseInt(values[i]) :
+                     h === 'date' ? new Date(values[i]) : values[i];
+        });
+        return row;
+    });
+}
+
+const ROWS = parseCSV(RAW_CSV);
+
+const METRICS = {
+    revenue: { expr: r => r.revenue },
+    cost: { expr: r => r.cost },
+    shipping_cost: { expr: r => r.shipping_cost },
+    discount_amount: { expr: r => r.discount_amount },
+    units_sold: { expr: r => r.units_sold },
+    net_revenue: { expr: r => r.revenue - r.discount_amount },
+    total_cost: { expr: r => r.cost + r.shipping_cost },
+    margin: { expr: r => r.revenue - r.discount_amount - r.cost - r.shipping_cost }
+};
+
+const FILTERS = {
+    q3_2024: r => r.date >= new Date('2024-07-01') && r.date <= new Date('2024-09-30'),
+    q4_2024: r => r.date >= new Date('2024-10-01') && r.date <= new Date('2024-12-31'),
+    north_america_only: r => r.region === 'North America',
+    south_america_only: r => r.region === 'South America',
+    europe_only: r => r.region === 'Europe',
+    asia_only: r => r.region === 'Asia',
+    oceania_only: r => r.region === 'Oceania',
+    africa_only: r => r.region === 'Africa',
+    middle_east_only: r => r.region === 'Middle East',
+    electronics: r => r.product_category === 'Electronics',
+    clothing: r => r.product_category === 'Clothing',
+    home_garden: r => r.product_category === 'Home & Garden'
+};
+
+function executeQuery(measures, dimensions, filters) {
+    let filtered = ROWS;
+    const appliedFilters = [];
+    filters.forEach(f => {
+        if (FILTERS[f]) {
+            filtered = filtered.filter(FILTERS[f]);
+            appliedFilters.push(f);
+        }
+    });
+
+    const groups = {};
+    filtered.forEach(row => {
+        const key = {};
+        dimensions.forEach(dim => {
+            if (dim === 'time') key.time_month = row.date.toISOString().slice(0,7);
+            else if (dim === 'geography') { key.region = row.region; key.country = row.country; }
+            else if (dim === 'region') key.region = row.region;
+            else if (dim === 'country') key.country = row.country;
+            else if (dim === 'product_category') key.product_category = row.product_category;
+        });
+        const keyStr = JSON.stringify(key);
+        if (!groups[keyStr]) groups[keyStr] = { key, rows: [] };
+        groups[keyStr].rows.push(row);
+    });
+
+    const results = Object.values(groups).map(g => {
+        const record = { ...g.key };
+        measures.forEach(m => {
+            if (m === 'margin_pct') {
+                const margin = sum(g.rows, METRICS.margin.expr);
+                const netRevenue = sum(g.rows, METRICS.net_revenue.expr);
+                record.margin_pct = netRevenue ? round(margin / netRevenue * 100) : 0;
+            } else if (m === 'avg_order_value') {
+                record.avg_order_value = round(sum(g.rows, METRICS.revenue.expr) / g.rows.length);
+            } else if (m === 'transaction_count') {
+                record.transaction_count = g.rows.length;
+            } else if (METRICS[m]) {
+                record[m] = round(sum(g.rows, METRICS[m].expr));
+            }
+        });
+        return record;
+    });
+
+    return { data: results, appliedFilters };
+}
+
+function sum(rows, fn) { return rows.reduce((a, r) => a + fn(r), 0); }
+function round(n) { return Math.round(n * 100) / 100; }
+
+function parseQuery(query) {
+    const q = query.toLowerCase();
+    const measureKeywords = {
+        'revenue': 'revenue', 'total revenue': 'revenue',
+        'cost': 'cost', 'total cost': 'cost',
+        'margin': 'margin', 'gross margin': 'margin',
+        'margin percentage': 'margin_pct', 'margin %': 'margin_pct',
+        'shipping cost': 'shipping_cost', 'shipping': 'shipping_cost',
+        'units sold': 'units_sold', 'discount': 'discount_amount',
+        'net revenue': 'net_revenue', 'average order value': 'avg_order_value',
+        'transaction count': 'transaction_count'
+    };
+    const dimKeywords = {
+        'time': 'time', 'month': 'time', 'quarter': 'time',
+        'region': 'region', 'regions': 'region', 'continent': 'region', 'continents': 'region',
+        'country': 'country', 'countries': 'country',
+        'geography': 'geography',
+        'product': 'product_category', 'category': 'product_category'
+    };
+    const filterKeywords = {
+        'north america': 'north_america_only', 'north american': 'north_america_only',
+        'south america': 'south_america_only', 'south american': 'south_america_only',
+        'europe': 'europe_only', 'european': 'europe_only',
+        'asia': 'asia_only', 'asian': 'asia_only',
+        'oceania': 'oceania_only',
+        'africa': 'africa_only', 'african': 'africa_only',
+        'middle east': 'middle_east_only', 'middle eastern': 'middle_east_only',
+        'q3': 'q3_2024', 'quarter 3': 'q3_2024', 'third quarter': 'q3_2024',
+        'q4': 'q4_2024', 'quarter 4': 'q4_2024', 'fourth quarter': 'q4_2024',
+        'electronics': 'electronics', 'clothing': 'clothing',
+        'home & garden': 'home_garden', 'home': 'home_garden'
+    };
+
+    const measures = [];
+    Object.entries(measureKeywords).forEach(([kw, m]) => {
+        if (q.includes(kw) && !measures.includes(m)) measures.push(m);
+    });
+    if (!measures.length) measures.push('revenue');
+
+    const dimensions = [];
+    Object.entries(dimKeywords).forEach(([kw, d]) => {
+        if (q.includes(kw) && !dimensions.includes(d)) dimensions.push(d);
+    });
+
+    const filters = [];
+    Object.entries(filterKeywords).forEach(([kw, f]) => {
+        if (q.includes(kw) && !filters.includes(f)) filters.push(f);
+    });
+
+    return { measures, dimensions, filters, isMarginAnalysis: q.includes('margin') && (q.includes('drop') || q.includes('why')) };
+}
+
+function analyze(query) {
+    const parsed = parseQuery(query);
+    const result = executeQuery(parsed.measures, parsed.dimensions, parsed.filters);
+
+    const response = {
+        explanation: '',
+        data: result.data,
+        visualization: parsed.dimensions.includes('time') ? 'line_chart' : (parsed.dimensions.includes('geography') || parsed.dimensions.includes('region') || parsed.dimensions.includes('country') || parsed.dimensions.includes('product_category') ? 'bar_chart' : 'kpi_card'),
+        reasoning_steps: [],
+        transparency: { api_call: { measures: parsed.measures, dimensions: parsed.dimensions, filters: result.appliedFilters } }
+    };
+
+    if (parsed.isMarginAnalysis && parsed.measures.includes('margin')) {
+        response.reasoning_steps = [
+            {step: 1, action: 'Query overall margin for the selected scope', agent_thought: 'User is asking about margin drop. I need to first establish the baseline margin figure.'},
+            {step: 2, action: 'Break down margin by product category', agent_thought: 'Margins dropped overall. I need to see which product categories are dragging this down.'},
+            {step: 3, action: 'Analyze cost components (product cost vs shipping cost)', agent_thought: 'Now I need to see if the margin drop is driven by product costs or shipping costs increasing.'},
+            {step: 4, action: 'Compare month-over-month margin trend', agent_thought: 'Let me check if this is a recent trend or a steady decline.'}
+        ];
+    }
+
+    response.explanation = generateExplanation(query, result.data);
+    return response;
+}
+
+function generateExplanation(query, data) {
+    if (!data.length) return 'No data found.';
+    if (data.length === 1) {
+        const parts = [];
+        Object.entries(data[0]).forEach(([k, v]) => {
+            if (typeof v === 'number') {
+                if (['revenue','cost','margin','net_revenue','total_cost','shipping_cost','discount_amount'].includes(k)) parts.push(`${k.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}: $${v.toLocaleString()}`);
+                else if (k === 'margin_pct') parts.push(`Margin: ${v.toFixed(1)}%`);
+                else parts.push(`${k}: ${v.toLocaleString()}`);
+            }
+        });
+        return `Based on the semantic layer query for '${query}': ` + parts.join(', ');
+    }
+    return `Found ${data.length} breakdown rows for '${query}'.`;
+}
+
+let autoDemoRunning = true;
+
+function toggleInterviewMode() {
+    document.getElementById('interviewPanel').classList.toggle('active');
+}
+
+function launchConfetti() {
+    const container = document.getElementById('confettiContainer');
+    const colors = ['#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4'];
+    for (let i = 0; i < 50; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + '%';
+        c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animationDelay = Math.random() * 2 + 's';
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        container.appendChild(c);
+        setTimeout(() => c.remove(), 3000);
+    }
+}
+
+function skipAutoDemo() {
+    autoDemoRunning = false;
+    document.getElementById('autoDemoBanner').style.display = 'none';
+}
+
+async function runAutoDemo() {
+    if (!autoDemoRunning) return;
+    await wait(2000);
+    if (!autoDemoRunning) return;
+    await typeUserMessage('Compare revenue across all continents');
+    if (!autoDemoRunning) return;
+    await wait(500);
+    const response = analyze('Compare revenue across all continents');
+    await typeAgentResponse(response);
+    await wait(1000);
+    launchConfetti();
+    await wait(3000);
+    document.getElementById('autoDemoBanner').style.display = 'none';
+    autoDemoRunning = false;
+}
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function typeUserMessage(text) {
+    const messages = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'message user';
+    div.innerHTML = `<div class="message-label">You</div><div class="message-bubble typing-cursor"></div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    const bubble = div.querySelector('.message-bubble');
+    for (let i = 0; i < text.length; i++) {
+        bubble.textContent = text.substring(0, i + 1);
+        await wait(30);
+    }
+    bubble.classList.remove('typing-cursor');
+}
+
+async function typeAgentResponse(response) {
+    const messages = document.getElementById('chatMessages');
+    const loadingId = 'loading-' + Date.now();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'message agent';
+    loadingDiv.id = loadingId;
+    loadingDiv.innerHTML = `<div class="message-label">MetricMind Agent</div><div class="message-bubble"><div class="loading-dots"><span></span><span></span><span></span></div></div></div>`;
+    messages.appendChild(loadingDiv);
+    messages.scrollTop = messages.scrollHeight;
+    await wait(1500);
+    loadingDiv.remove();
+    buildResponseHTML(response, messages);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function loadSchema() {
+    const metrics = [
+        {name: 'revenue', display_name: 'Total Revenue', description: 'Gross revenue before discounts'},
+        {name: 'margin', display_name: 'Gross Margin', description: 'Net revenue minus total cost'},
+        {name: 'margin_pct', display_name: 'Margin Percentage', description: 'Margin as % of net revenue'},
+        {name: 'shipping_cost', display_name: 'Shipping Cost', description: 'Total shipping costs'},
+        {name: 'units_sold', display_name: 'Units Sold', description: 'Total units sold'}
+    ];
+    document.getElementById('metricsList').innerHTML = metrics.map(m => `
+        <div class="metric-chip" onclick="sendQuery('What is the ${m.display_name.toLowerCase()}?')">
+            <div class="name">${m.display_name}</div><div class="desc">${m.description}</div>
+        </div>`).join('');
+    document.getElementById('dimensionsList').innerHTML = `
+        <div class="metric-chip"><div class="name">time</div><div class="desc">temporal • month, quarter</div></div>
+        <div class="metric-chip"><div class="name">region</div><div class="desc">categorical • 6 continents</div></div>
+        <div class="metric-chip"><div class="name">country</div><div class="desc">categorical • 24 countries</div></div>
+        <div class="metric-chip"><div class="name">product_category</div><div class="desc">categorical</div></div>`;
+}
+
+async function sendQuery(text) {
+    if (autoDemoRunning) skipAutoDemo();
+    const input = document.getElementById('userInput');
+    const btn = document.getElementById('sendBtn');
+    const messages = document.getElementById('chatMessages');
+    const query = text || input.value.trim();
+    if (!query) return;
+    if (!text) input.value = '';
+
+    messages.innerHTML += `<div class="message user"><div class="message-label">You</div><div class="message-bubble">${query}</div></div>`;
+    messages.scrollTop = messages.scrollHeight;
+
+    const loadingId = 'loading-' + Date.now();
+    messages.innerHTML += `<div class="message agent" id="${loadingId}"><div class="message-label">MetricMind Agent</div><div class="message-bubble"><div class="loading-dots"><span></span><span></span><span></span></div></div></div>`;
+    messages.scrollTop = messages.scrollHeight;
+    btn.disabled = true;
+
+    await wait(1200);
+    document.getElementById(loadingId).remove();
+    const response = analyze(query);
+    buildResponseHTML(response, messages);
+    messages.scrollTop = messages.scrollHeight;
+
+    if (query.toLowerCase().includes('margin') && query.toLowerCase().includes('drop')) {
+        setTimeout(() => launchConfetti(), 500);
+    }
+    btn.disabled = false;
+}
+
+function buildResponseHTML(response, messages) {
+    let html = `<div class="message agent"><div class="message-label">MetricMind Agent</div><div class="message-bubble">${response.explanation}</div>`;
+
+    if (response.reasoning_steps && response.reasoning_steps.length) {
+        html += `<div class="reasoning-box"><div class="reasoning-title">🔍 Multi-Step Reasoning</div>`;
+        response.reasoning_steps.forEach(step => {
+            html += `<div class="reasoning-step"><div class="step-number">${step.step}</div><div class="step-content"><div class="step-action">${step.action}</div><div class="step-thought">"${step.agent_thought}"</div></div></div>`;
+        });
+        html += `</div>`;
+    }
+
+    if (response.data && response.data.length) {
+        if (response.data.length === 1) {
+            html += `<div class="kpi-grid">`;
+            Object.entries(response.data[0]).forEach(([key, val]) => {
+                if (typeof val === 'number') {
+                    const isCurrency = ['revenue','cost','margin','shipping_cost','net_revenue','total_cost','discount_amount'].includes(key);
+                    const isPct = key === 'margin_pct';
+                    const displayVal = isCurrency ? `$${val.toLocaleString()}` : isPct ? `${val.toFixed(1)}%` : val.toLocaleString();
+                    html += `<div class="kpi-card"><div class="kpi-label">${key.replace(/_/g,' ')}</div><div class="kpi-value">${displayVal}</div></div>`;
+                }
+            });
+            html += `</div>`;
+        } else {
+            const chartId = 'chart-' + Date.now();
+            html += `<div class="chart-container"><canvas id="${chartId}"></canvas></div>`;
+            const cols = Object.keys(response.data[0]);
+            html += `<table class="data-table"><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+            response.data.forEach(row => {
+                html += `<tr>${cols.map(c => {
+                    const v = row[c];
+                    if (typeof v === 'number') {
+                        if (['revenue','cost','margin','shipping_cost'].includes(c)) return `<td>$${v.toLocaleString()}</td>`;
+                        if (c === 'margin_pct') return `<td>${v.toFixed(1)}%</td>`;
+                        return `<td>${v.toLocaleString()}</td>`;
+                    }
+                    return `<td>${v}</td>`;
+                }).join('')}</tr>`;
+            });
+            html += `</tbody></table>`;
+            setTimeout(() => renderChart(chartId, response.data, response.visualization), 100);
+        }
+    }
+
+    if (response.transparency) {
+        html += `<div class="transparency-panel"><div class="transparency-header"><div class="transparency-title">🔎 Transparency — View API Call</div><button class="transparency-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">Toggle</button></div><div class="transparency-content" style="display:none;">${JSON.stringify(response.transparency.api_call, null, 2)}</div></div>`;
+    }
+
+    html += `</div>`;
+    messages.innerHTML += html;
+}
+
+function renderChart(canvasId, data, vizType) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    const keys = Object.keys(data[0]);
+    const labelKey = keys.find(k => typeof data[0][k] === 'string') || keys[0];
+    const valueKeys = keys.filter(k => typeof data[0][k] === 'number');
+    const labels = data.map(d => d[labelKey]);
+    const datasets = valueKeys.map((key, i) => ({
+        label: key.replace(/_/g, ' ').toUpperCase(),
+        data: data.map(d => d[key]),
+        backgroundColor: ['#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444'][i % 5] + '80',
+        borderColor: ['#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444'][i % 5],
+        borderWidth: 2,
+        tension: 0.4
+    }));
+    new Chart(ctx, {
+        type: vizType === 'line_chart' ? 'line' : 'bar',
+        data: { labels, datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#e2e8f0' } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+            }
+        }
+    });
+}
+
+loadSchema();
+runAutoDemo();
+</script>
+</body>
+</html>
