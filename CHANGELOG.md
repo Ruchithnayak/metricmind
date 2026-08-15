@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.3.0] - 2026-08-15
+### Added
+- MetricMind NOVA executive Command Center
+- Decision signal, target-gap and decision-confidence cards
+- AI Analyst with governed local reasoning trace
+- Scenario Lab with price, discount and volume controls
+- Scenario sensitivity snapshot
+- Prescriptive Action Board
+- Root Cause Map with evidence stack
+- Forecast Studio with transparent baseline guardrail
+- Signal Radar for margin and discount risk
+- Data Trust Center with formula and integrity checks
+- Metric Lineage view
+- Session Audit Trail
+- Responsive NOVA visual system for desktop and mobile
+- Resettable filters and CSV export
+- Keyboard shortcut `/` to open AI Analyst
+
+### Improved
+- Executive-focused navigation: Decide → Understand → Trust
+- Clear separation between baseline forecasting and validated ML forecasting
+- Visible data-governance and decision-confidence concepts
+- README rewritten as a product and architecture overview
+
+### Note
+- `data/sales_data.csv` remains the canonical 72-row repository dataset.
+- The browser NOVA demo contains bundled records for immediate offline startup; production integration should connect NOVA directly to the canonical semantic data layer.
+
 ## [0.2.0] - 2026-07-30
 ### Added
 - Country-specific pricing with GDP per capita context
